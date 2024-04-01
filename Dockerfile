@@ -1,12 +1,12 @@
 # Base Node Image
-FROM node:18-alpine AS base
+FROM node:20-buster AS base
 WORKDIR /app
 
-RUN apk add --no-cache wget ca-certificates
+# RUN apk add --no-cache wget ca-certificates
 
 FROM base AS supabase_install
-RUN wget https://github.com/supabase/cli/releases/download/v1.152.4/supabase_1.152.4_linux_amd64.apk -O /tmp/supabase.apk \
-    && apk add --allow-untrusted /tmp/supabase.apk
+RUN wget https://github.com/supabase/cli/releases/download/v1.152.4/supabase_1.152.4_linux_amd64.deb -O /tmp/supabase.deb \
+    && dpkg -i /tmp/supabase.deb
 
 FROM supabase_install AS npm-install
 COPY package*.json ./
@@ -28,8 +28,8 @@ RUN npm run build
 
 #----- Supabase-init -----
 FROM build AS supabase-init
-RUN npx supabase start
-RUN npx supabase status > supabase_status.txt
+RUN supabase start
+RUN supabase status > supabase_status.txt
 
 # ----- Extraction -----
 FROM supabase-init AS supabase-status
@@ -52,13 +52,12 @@ RUN sed -i 's/service_role_key = "your-service-role-key"/service_role_key = "'$S
 
 # ----- db push ------
 FROM sql-setup AS db-push
-RUN npx supabase db push
+RUN supabase db push
 
 # ---- Final Step -----
 FROM db-push AS final
 EXPOSE 3000
 CMD ["npm", "run", "chat"]
 
-#TODO: - section off dockerfile for image sizes
-# - get .env values
+#TODO: - get .env values
 # - run supabase status and fill in nextpublicsupabaseurl to .env.local

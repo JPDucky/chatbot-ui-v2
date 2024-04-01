@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      target: final  # Ensure we build up to the 'final' stage defined in your Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Needed for Supabase CLI Docker commands
+    ports:
+      - "3000:3000"  # Expose port 3000 if that's what your application uses
+    environment:
+      - NODE_ENV=production  # Set additional environment variables as needed
+    depends_on:
+      - docker-in-docker
+
+  # Docker-in-Docker service remains optional based on your specific needs outside of what's described in the Dockerfile
+  docker-in-docker:
+    image: docker:dind
+    privileged: true
+    volumes:
+      - dind-storage:/var/lib/docker
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+volumes:
+  dind-storage:
+
